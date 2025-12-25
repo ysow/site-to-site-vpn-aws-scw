@@ -1,12 +1,12 @@
 variable "scw_access_key" {
-  default = "SCW6QPPC28Q0SCKYCMJ0"
+  default = ""
 }
 
 variable "scw_secret_key" {
-  default = "dd1c96be-3922-4e63-8d58-4a6687971aba"
+  default = ""
 }
 variable "scw_project_id" {
-  default = "50fc0d26-96ad-4d8b-8b37-aeff2d19396a"
+  default = ""
 }
 
 variable "region" {
@@ -20,11 +20,11 @@ variable "cgw_asn" {
 
 variable "cgw_ip" {
   type    = string
-  default = "51.159.171.151"
+  default = ""
 }
 
 variable "claranet_plage" {
   type    = list(string)
-  default = ["0.0.0.0/0"]
+  default = [""]
 
 }
