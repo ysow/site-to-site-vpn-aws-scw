@@ -23,8 +23,14 @@ variable "cgw_ip" {
   default = ""
 }
 
-variable "claranet_plage" {
+variable "aws_plage" {
   type    = list(string)
-  default = [""]
+  default = ["10.1.0.0/16"]
+
+}
+
+variable "scw_vpn_public_ip" {
+  type    = string
+  default = "51.158.127.186"
 
 }

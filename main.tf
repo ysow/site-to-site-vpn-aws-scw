@@ -59,6 +59,7 @@ resource "scaleway_k8s_cluster" "workshop" {
   cni                         = "cilium"
   private_network_id          = scaleway_vpc_private_network.pn.id
   delete_additional_resources = true
+  depends_on = [scaleway_ipam_ip.pgw]
 }
 
 
@@ -79,27 +80,29 @@ resource "scaleway_k8s_pool" "workshop" {
 
 
 # 3. S2S VPN Scaleway
+
 resource "scaleway_s2s_vpn_gateway" "vgw" {
   name               = "workshop-vpn-gw"
   private_network_id = scaleway_vpc_private_network.pn.id
   gateway_type       = "VGW-S"
 }
 
+# Customer Gateway côté Scaleway (représente AWS)
 resource "scaleway_s2s_vpn_customer_gateway" "cgw" {
-  name        = "workshop-customer-gw"
-  ipv4_public = var.cgw_ip  # IP publique du gateway Claranet (à fournir)
-  asn         = var.cgw_asn # ASN BGP côté Claranet (fourni par Claranet)
+  name        = "aws-customer-gw"
+  ipv4_public = aws_vpn_connection.to_scaleway.tunnel1_address # IP du tunnel côté AWS
+  asn         = var.cgw_asn # ASN BGP côté AWS (fourni par AWS)
 }
 
+# Politique de routage (à adapter selon vos besoins)
 resource "scaleway_s2s_vpn_routing_policy" "policy" {
   name    = "workshop-vpn-policy"
   is_ipv6 = false
-  // Plages acceptées depuis Claranet (réseau Oracle):
-  prefix_filter_in = var.claranet_plage
-  // Plages annoncées vers Claranet (réseau du cluster Kapsule):
+  prefix_filter_in  = var.aws_plage
   prefix_filter_out = [scaleway_vpc_private_network.pn.ipv4_subnet[0].subnet]
 }
 
+# Connexion VPN S2S
 resource "scaleway_s2s_vpn_connection" "main" {
   name                     = "workshop-connection"
   vpn_gateway_id           = scaleway_s2s_vpn_gateway.vgw.id
@@ -109,8 +112,8 @@ resource "scaleway_s2s_vpn_connection" "main" {
 
   bgp_config_ipv4 {
     routing_policy_id = scaleway_s2s_vpn_routing_policy.policy.id
-    private_ip        = "169.254.0.1/30"
-    peer_private_ip   = "169.254.0.2/30"
+    private_ip        = "169.254.0.1/30"   # IP côté Scaleway (adapter si besoin)
+    peer_private_ip   = "169.254.0.2/30"   # IP côté AWS (adapter si besoin)
   }
 
   ikev2_ciphers {
@@ -127,20 +130,20 @@ resource "scaleway_s2s_vpn_connection" "main" {
 }
 
 
-data "scaleway_secret_version" "s2s_psk" {
-  secret_id = scaleway_s2s_vpn_connection.main.secret_id
-  revision  = tostring(scaleway_s2s_vpn_connection.main.secret_version)
-}
+# data "scaleway_secret_version" "s2s_psk" {
+#   secret_id = scaleway_s2s_vpn_connection.main.secret_id
+#   revision  = tostring(scaleway_s2s_vpn_connection.main.secret_version)
+# }
 
-output "psk" {
-  value     = data.scaleway_secret_version.s2s_psk.data
-  sensitive = true
-}
+# output "psk" {
+#   value     = data.scaleway_secret_version.s2s_psk.data
+#   sensitive = true
+# }
 
 
 #4. Object Storage
 resource "scaleway_object_bucket" "workshop" {
-  name   = "workshop-bucket"
+  name   = "workshop-bucket-010101"
   region = var.region
   versioning {
     enabled = true
@@ -161,4 +164,14 @@ resource "scaleway_mongodb_instance" "workshop" {
     pn_id = scaleway_vpc_private_network.pn.id
   }
 
+}
+# ...existing code...
+
+# Récupérer l'IPAM config ID de la gateway VPN
+data "scaleway_ipam_ip" "vpn_gw_public_ip" {
+  ipam_ip_id = scaleway_s2s_vpn_gateway.vgw.public_config[0].ipam_ipv4_id
+}
+
+output "vpn_gateway_public_ip" {
+  value = data.scaleway_ipam_ip.vpn_gw_public_ip.address
 }
