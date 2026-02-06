@@ -28,7 +28,7 @@ resource "aws_subnet" "public_b" {
 # --- VPN & CONNECTIVITY ---
 # L'IP ici doit être celle de ta Flexible IP Scaleway rattachée à ta VPN GW
 resource "aws_customer_gateway" "scw_side" {
-  bgp_asn    = 65000
+  bgp_asn    = 12876
   ip_address = var.scw_vpn_public_ip
   type       = "ipsec.1"
   tags = { Name = "gw-to-scaleway" }
@@ -50,7 +50,21 @@ resource "aws_vpn_connection" "to_scaleway" {
   tunnel2_inside_cidr   = "169.254.233.148/30"
   # Les options BGP sont gérées automatiquement si les ASN sont corrects
 # Ajouter la variable pour le PSK Scaleway
+  tunnel1_phase1_encryption_algorithms = ["AES256"]
+  tunnel1_phase1_integrity_algorithms  = ["SHA2-256"]
+  tunnel1_phase1_dh_group_numbers      = [14]
+  
+  tunnel1_phase2_encryption_algorithms = ["AES256"]
+  tunnel1_phase2_integrity_algorithms  = ["SHA2-256"]
+  tunnel1_phase2_dh_group_numbers      = [14]
 
+  # Pour forcer AWS à démarrer le tunnel lui-même
+  tunnel1_startup_action = "start" 
+
+}
+resource "aws_vpn_gateway_route_propagation" "to_scaleway" {
+  vpn_gateway_id = aws_vpn_gateway.vpn_gw.id
+  route_table_id = aws_vpc.main.main_route_table_id # Ou ta route table spécifique
 }
 
 # Outputs utiles pour la config côté Scaleway

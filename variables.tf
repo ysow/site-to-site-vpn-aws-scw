@@ -15,12 +15,12 @@ variable "region" {
 
 variable "cgw_asn" {
   type    = number
-  default = 65010
+  default = 65000
 }
 
 variable "cgw_ip" {
   type    = string
-  default = "15.236.65.242"
+  default = ""
 }
 
 variable "aws_plage" {
@@ -31,7 +31,7 @@ variable "aws_plage" {
 
 variable "scw_vpn_public_ip" {
   type    = string
-  default = "51.158.127.186"
+  default = ""
 
 }
 variable "scw_vpn_psk" {

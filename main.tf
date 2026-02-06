@@ -110,8 +110,8 @@ resource "scaleway_s2s_vpn_connection" "main" {
 
   bgp_config_ipv4 {
     routing_policy_id = scaleway_s2s_vpn_routing_policy.policy.id
-    private_ip        = "169.254.131.120/30" # IP côté Scaleway (adapter si besoin)
-    peer_private_ip   = "169.254.131.116/30" # IP côté AWS (adapter si besoin)
+    private_ip        = "169.254.131.118/30" # <--- SCW doit être .118
+    peer_private_ip   = "169.254.131.117/30" # <--- AWS est .117 # IP côté AWS (adapter si besoin)
 }
 
   ikev2_ciphers {
