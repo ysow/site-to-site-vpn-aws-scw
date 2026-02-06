@@ -1,88 +1,87 @@
-# ⚠️ Ordre de déploiement recommandé
+# ⚠️ Recommended Deployment Order
 
-Il faut procéder par étapes :
+Proceed step by step:
 
-1. **Commente d'abord la création du Customer Gateway côté Scaleway** et le fichier `aws.tf` pour récupérer l'IP publique de la VPN Gateway côté Scaleway.
-2. **Décommente ensuite côté AWS** pour obtenir l'IP du tunnel concerné.
-3. **Fournis enfin le bon PSK** pour finaliser la liaison (récupère le PSK Scaleway et renseigne-le côté AWS).
+1. **First, comment out the creation of the Customer Gateway on the Scaleway side** and the `aws.tf` file. This allows you to retrieve the public IP of the Scaleway VPN Gateway.
+2. **Then, uncomment on the AWS side** to get the tunnel IP address.
+3. **Finally, provide the correct PSK** to finalize the link (retrieve the Scaleway PSK and set it on the AWS side).
 
+# Step-by-step guide: AWS <-> Scaleway Site-to-Site VPN
 
-# Guide de mise en place VPN Site-to-Site AWS <-> Scaleway
+This guide explains how to deploy a site-to-site VPN tunnel between AWS and Scaleway using Terraform, following best practices from the official guide.
 
-Ce guide explique comment déployer un tunnel VPN site-à-site entre AWS et Scaleway avec Terraform, en suivant les bonnes pratiques du guide officiel.
+## Prerequisites
+- Access to an AWS and a Scaleway account
+- Terraform installed
+- Access to AWS and Scaleway credentials
 
-## Prérequis
-- Accès à un compte AWS et Scaleway
-- Terraform installé
-- Accès aux credentials AWS et Scaleway
+## 1. Prepare variables
 
-## 1. Préparer les variables
+- Fill in access variables in `scaleway.auto.tfvars` and AWS variables in your environment files.
+- Set the AWS VPC CIDR in `aws_plage` (e.g.: `10.1.0.0/16`).
 
-- Renseigner les variables d'accès dans `scaleway.auto.tfvars` et les variables AWS dans vos fichiers d'environnement.
-- Définir le CIDR du VPC AWS dans `aws_plage` (ex : `10.1.0.0/16`).
-
-## 2. Déployer l'infrastructure Scaleway
+## 2. Deploy Scaleway infrastructure
 
 ```sh
 cd /Users/youssoupphasow/Documents/pocs/printemps
 terraform init
 terraform apply
 ```
-- Cela va créer le VPC, le réseau privé, la gateway publique, le cluster Kapsule, et la gateway VPN côté Scaleway.
+- This will create the VPC, private network, public gateway, Kapsule cluster, and VPN gateway on the Scaleway side.
 
-## 3. Déployer l'infrastructure AWS
+## 3. Deploy AWS infrastructure
 
-- Vérifier que la variable `scw_vpn_public_ip` correspond à l'IP publique de la gateway Scaleway.
-- Lancer :
+- Make sure the `scw_vpn_public_ip` variable matches the public IP of the Scaleway gateway.
+- Run:
 ```sh
 terraform init
 terraform apply
 ```
-- Cela va créer le VPC, les subnets, la customer gateway (pointant vers Scaleway), la VPN gateway et la connexion VPN côté AWS.
+- This will create the VPC, subnets, customer gateway (pointing to Scaleway), VPN gateway, and VPN connection on the AWS side.
 
-## 4. Récupérer les paramètres BGP et tunnels
+## 4. Retrieve BGP and tunnel parameters
 
-- Après l'apply AWS, récupérer les outputs :
-	- `aws_vpn_tunnel1_address` : IP publique du tunnel côté AWS
-	- `aws_vpn_tunnel1_vgw_inside_address` : IP BGP côté AWS
-	- `aws_vpn_tunnel1_cgw_inside_address` : IP BGP côté Scaleway
-	- `aws_vpn_tunnel1_preshared_key` : PSK généré (si non surchargé)
+- After applying AWS, retrieve the outputs:
+	- `aws_vpn_tunnel1_address`: AWS tunnel public IP
+	- `aws_vpn_tunnel1_vgw_inside_address`: AWS BGP IP
+	- `aws_vpn_tunnel1_cgw_inside_address`: Scaleway BGP IP
+	- `aws_vpn_tunnel1_preshared_key`: generated PSK (if not overridden)
 
-## 5. Configurer le Customer Gateway et la connexion côté Scaleway
+## 5. Configure the Customer Gateway and connection on Scaleway
 
-- Dans `main.tf` côté Scaleway, renseigner :
+- In `main.tf` on the Scaleway side, set:
 	- `cgw_ip` = `aws_vpn_tunnel1_address`
 	- `private_ip` = `aws_vpn_tunnel1_cgw_inside_address/30`
 	- `peer_private_ip` = `aws_vpn_tunnel1_vgw_inside_address/30`
 
-- Appliquer la configuration :
+- Apply the configuration:
 ```sh
 terraform apply
 ```
 
-## 6. Récupérer le PSK Scaleway
+## 6. Retrieve the Scaleway PSK
 
-- Après l'apply Scaleway, récupérer le PSK :
+- After applying Scaleway, retrieve the PSK:
 ```sh
 terraform output scw_vpn_psk
 ```
 
-## 7. Synchroniser le PSK côté AWS
+## 7. Synchronize the PSK on AWS
 
-- Passer la valeur du PSK Scaleway à la variable `scw_vpn_psk` côté AWS (via un fichier `.tfvars` ou variable d'environnement).
-- Relancer :
+- Pass the Scaleway PSK value to the `scw_vpn_psk` variable on AWS (via a `.tfvars` file or environment variable).
+- Re-run:
 ```sh
 terraform apply
 ```
 
-## 8. Vérification
+## 8. Verification
 
-- Vérifier l'état du tunnel VPN dans les consoles AWS et Scaleway.
-- Tester la connectivité réseau entre les deux VPC.
+- Check the VPN tunnel status in the AWS and Scaleway consoles.
+- Test network connectivity between the two VPCs.
 
 ---
 
-**Remarques :**
-- Pour chaque tunnel, répéter les étapes avec les valeurs du second tunnel.
-- Adapter les CIDR, ASN et paramètres selon votre architecture.
-- Pour automatiser la synchronisation des outputs entre les deux stacks, utiliser le provider `terraform_remote_state`.
+**Notes:**
+- For each tunnel, repeat the steps with the values of the second tunnel.
+- Adjust CIDR, ASN, and parameters according to your architecture.
+- To automate output synchronization between the two stacks, use the `terraform_remote_state` provider.
