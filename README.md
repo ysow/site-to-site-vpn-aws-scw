@@ -1,3 +1,11 @@
+# ⚠️ Ordre de déploiement recommandé
+
+Il faut procéder par étapes :
+
+1. **Commente d'abord la création du Customer Gateway côté Scaleway** et le fichier `aws.tf` pour récupérer l'IP publique de la VPN Gateway côté Scaleway.
+2. **Décommente ensuite côté AWS** pour obtenir l'IP du tunnel concerné.
+3. **Fournis enfin le bon PSK** pour finaliser la liaison (récupère le PSK Scaleway et renseigne-le côté AWS).
+
 
 # Guide de mise en place VPN Site-to-Site AWS <-> Scaleway
 
