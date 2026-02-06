@@ -87,22 +87,20 @@ resource "scaleway_s2s_vpn_gateway" "vgw" {
   gateway_type       = "VGW-S"
 }
 
-# Customer Gateway côté Scaleway (représente AWS)
+
 resource "scaleway_s2s_vpn_customer_gateway" "cgw" {
-  name        = "aws-customer-gw"
-  ipv4_public = aws_vpn_connection.to_scaleway.tunnel1_address # IP du tunnel côté AWS
-  asn         = var.cgw_asn # ASN BGP côté AWS (fourni par AWS)
+  name        = "workshop-customer-gw"
+  ipv4_public = var.cgw_ip
+  asn         = var.cgw_asn
 }
 
-# Politique de routage (à adapter selon vos besoins)
 resource "scaleway_s2s_vpn_routing_policy" "policy" {
-  name    = "workshop-vpn-policy"
-  is_ipv6 = false
-  prefix_filter_in  = var.aws_plage
-  prefix_filter_out = [scaleway_vpc_private_network.pn.ipv4_subnet[0].subnet]
+  name             = "workshop-vpn-policy"
+  is_ipv6          = false
+  prefix_filter_in = var.aws_plage # VPC CIDR AWS
+  prefix_filter_out = [scaleway_vpc_private_network.pn.ipv4_subnet[0].subnet] # VPC CIDR SCW
 }
 
-# Connexion VPN S2S
 resource "scaleway_s2s_vpn_connection" "main" {
   name                     = "workshop-connection"
   vpn_gateway_id           = scaleway_s2s_vpn_gateway.vgw.id
@@ -112,9 +110,9 @@ resource "scaleway_s2s_vpn_connection" "main" {
 
   bgp_config_ipv4 {
     routing_policy_id = scaleway_s2s_vpn_routing_policy.policy.id
-    private_ip        = "169.254.0.1/30"   # IP côté Scaleway (adapter si besoin)
-    peer_private_ip   = "169.254.0.2/30"   # IP côté AWS (adapter si besoin)
-  }
+    private_ip        = "169.254.131.120/30" # IP côté Scaleway (adapter si besoin)
+    peer_private_ip   = "169.254.131.116/30" # IP côté AWS (adapter si besoin)
+}
 
   ikev2_ciphers {
     encryption = "aes256"
@@ -130,15 +128,16 @@ resource "scaleway_s2s_vpn_connection" "main" {
 }
 
 
-# data "scaleway_secret_version" "s2s_psk" {
-#   secret_id = scaleway_s2s_vpn_connection.main.secret_id
-#   revision  = tostring(scaleway_s2s_vpn_connection.main.secret_version)
-# }
 
-# output "psk" {
-#   value     = data.scaleway_secret_version.s2s_psk.data
-#   sensitive = true
-# }
+data "scaleway_secret_version" "s2s_psk" {
+  secret_id = scaleway_s2s_vpn_connection.main.secret_id
+  revision  = tostring(scaleway_s2s_vpn_connection.main.secret_version)
+}
+
+output "scw_vpn_psk" {
+  value     = data.scaleway_secret_version.s2s_psk.data
+  sensitive = true
+}
 
 
 #4. Object Storage

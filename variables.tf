@@ -20,7 +20,7 @@ variable "cgw_asn" {
 
 variable "cgw_ip" {
   type    = string
-  default = ""
+  default = "15.236.65.242"
 }
 
 variable "aws_plage" {
@@ -33,4 +33,9 @@ variable "scw_vpn_public_ip" {
   type    = string
   default = "51.158.127.186"
 
+}
+variable "scw_vpn_psk" {
+  type      = string
+  sensitive = true
+  description = "PSK généré côté Scaleway à utiliser pour le tunnel AWS."
 }

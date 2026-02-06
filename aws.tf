@@ -43,7 +43,42 @@ resource "aws_vpn_connection" "to_scaleway" {
   vpn_gateway_id      = aws_vpn_gateway.vpn_gw.id
   customer_gateway_id = aws_customer_gateway.scw_side.id
   type                = "ipsec.1"
-  static_routes_only  = true
+  static_routes_only  = false # BGP activé
+  tunnel1_preshared_key = var.scw_vpn_psk
+  tunnel1_inside_cidr   = "169.254.131.116/30"
+  tunnel2_preshared_key = var.scw_vpn_psk # à adapter si Scaleway fournit un PSK différent pour chaque tunnel
+  tunnel2_inside_cidr   = "169.254.233.148/30"
+  # Les options BGP sont gérées automatiquement si les ASN sont corrects
+# Ajouter la variable pour le PSK Scaleway
+
+}
+
+# Outputs utiles pour la config côté Scaleway
+output "aws_vpn_tunnel1_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel1_address
+}
+output "aws_vpn_tunnel2_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel2_address
+}
+output "aws_vpn_tunnel1_cgw_inside_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel1_cgw_inside_address
+}
+output "aws_vpn_tunnel1_vgw_inside_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel1_vgw_inside_address
+}
+output "aws_vpn_tunnel2_cgw_inside_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel2_cgw_inside_address
+}
+output "aws_vpn_tunnel2_vgw_inside_address" {
+  value = aws_vpn_connection.to_scaleway.tunnel2_vgw_inside_address
+}
+output "aws_vpn_tunnel1_preshared_key" {
+  value     = aws_vpn_connection.to_scaleway.tunnel1_preshared_key
+  sensitive = true
+}
+output "aws_vpn_tunnel2_preshared_key" {
+  value     = aws_vpn_connection.to_scaleway.tunnel2_preshared_key
+  sensitive = true
 }
 
 # # --- COMPUTE (Free Tier Eligible) ---
