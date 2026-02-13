@@ -23,7 +23,6 @@ This guide explains how to deploy a site-to-site VPN tunnel between AWS and Scal
 ## 2. Deploy Scaleway infrastructure
 
 ```sh
-cd /Users/youssoupphasow/Documents/pocs/printemps
 terraform init
 terraform apply
 ```
